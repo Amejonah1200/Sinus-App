@@ -24,7 +24,7 @@ run {
 
 jar {
     manifest {
-        attributes 'Main-Class': 'ap.amejonah.sinusapp.SinusApp'
+        attributes 'Main-Class': 'ap.amejonah.sinusapp.Launcher'
     }
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
@@ -32,3 +32,4 @@ jar {
 }
 
 mainClassName = 'ap.amejonah.sinusapp.SinusApp'
+compileJava.options.encoding = "UTF-8"

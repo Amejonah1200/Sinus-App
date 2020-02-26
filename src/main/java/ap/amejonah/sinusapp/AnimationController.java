@@ -15,22 +15,26 @@ public class AnimationController {
   private SinusApp app;
   private ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
   private final int START_X;
-  private int xPos = -1, length, scale;
-  private double xScale;
+  private boolean running = false;
+  private int xPos = -1, length, yScale;
+  private final double xScale;
   
-  public AnimationController(SinusApp app, int START_X, int length, int scale, double xScale) {
+  public AnimationController(SinusApp app, int START_X, int length, int yScale, double xScale) {
     this.app = app;
     this.START_X = START_X;
     this.length = length;
-    this.scale = scale;
+    this.yScale = yScale;
     this.xScale = xScale;
   }
   
   public void animate() {
+    // (499 Lines + 1 Arc) * functions + 2 Lines + 1 Arc + 2 Lines + (3 Lines) *
+    // functions
     ObservableList<Node> children = ((AnchorPane) app.getPrimaryStage().getScene().getRoot()).getChildren();
     for (SimpleMathFunction function : app.getFunctions())
       addHelpLines(children, ((GraphFunction) function).getColor());
     executorService.scheduleAtFixedRate(() -> {
+      if (!running) return;
       Platform.runLater(() -> {
         if (xPos >= length - 1) xPos = 0;
         else xPos++;
@@ -42,13 +46,13 @@ public class AnimationController {
   }
   
   private void addHelpLines(ObservableList<Node> children, Color color) {
-    Line line = new Line(200 + scale, 300, START_X, 300);
+    Line line = new Line(START_X, 300, START_X, 300);
     line.setStroke(color);
     children.add(line);
-    line = new Line(200, 300, 200 + scale, 300);
+    line = new Line(200, 300, 200 + yScale, 300);
     line.setStroke(color);
     children.add(line);
-    line = new Line(START_X, 300, START_X, 300);
+    line = new Line(200 + yScale, 300, START_X, 300);
     line.setStroke(color);
     children.add(line);
   }
@@ -61,26 +65,40 @@ public class AnimationController {
       tempScale = ((GraphFunction) function).getCoefficientGlobal();
       x += ((GraphFunction) function).getAddToX();
     }
+    // Vertical Graph
     Line tempLine = (Line) children.get(children.size() - startIndex);
     tempLine.setStartX(START_X + xPos);
     tempLine.setEndX(START_X + xPos);
-    tempLine.setEndY(300 - function.f(functionX) * scale);
+    tempLine.setEndY(300 - function.f(functionX) * yScale);
     children.set(children.size() - startIndex, tempLine);
+    // Arc Radius
     tempLine = (Line) children.get(children.size() - (startIndex + 1));
-    tempLine.setEndX(200 + (Math.cos(x)) * scale * tempScale);
-    tempLine.setEndY(300 - Math.sin(x) * scale * tempScale);
+    tempLine.setEndX(200 + Math.cos(x) * yScale * tempScale);
+    tempLine.setEndY(300 - Math.sin(x) * yScale * tempScale);
     children.set(children.size() - (startIndex + 1), tempLine);
+    // Connection Arc-Graph
     tempLine = (Line) children.get(children.size() - (startIndex + 2));
-    tempLine.setStartX(200 + (Math.cos(x)) * scale * tempScale);
-    tempLine.setStartY(300 - Math.sin(x) * scale * tempScale);
+    tempLine.setStartX(200 + Math.cos(x) * yScale * tempScale);
+    tempLine.setStartY(300 - Math.sin(x) * yScale * tempScale);
     tempLine.setEndX(START_X + xPos);
-    tempLine.setEndY(300 - function.f(functionX) * scale);
+    tempLine.setEndY(300 - function.f(functionX) * yScale);
     children.set(children.size() - (startIndex + 2), tempLine);
   }
   
-  public void terminate() {
-    // Shutdown the executorservice for program stop.
-    executorService.shutdown();
+  public void startAnimation() {
+    running = true;
+  }
+  
+  public void stopAnimation() {
+    running = false;
+  }
+  
+  public boolean isRunning() {
+    return running;
+  }
+  
+  public void setRunning(boolean running) {
+    this.running = running;
   }
   
   public void setVisible(int index, boolean visible) {
